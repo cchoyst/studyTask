@@ -1,3 +1,4 @@
+//メイン画面。ログイン対応に変更
 import { useEffect, useState } from "react";
 import { auth, login, logout } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -11,7 +12,7 @@ function App() {
 
   return (
     <div style={{ padding: "40px", fontSize: "20px" }}>
-      <h1>Task Calendar App</h1>
+      <h1>Study-TASK</h1>
 
       {!user && (
         <button onClick={login}>
