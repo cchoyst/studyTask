@@ -1,6 +1,10 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { /*getAnalytics*/
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    signOut  } from "firebase/auth" /*"firebase/analytics"*/ ;
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -18,4 +22,18 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+//const analytics = getAnalytics(app);
+
+
+// 🔥 ここが重要！
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ログイン関数
+export const login = () => signInWithPopup(auth, provider);
+
+// ログアウト関数
+export const logout = () => signOut(auth);
+
+// App.jsx で使うため export
+export { auth };
