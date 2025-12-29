@@ -13,6 +13,7 @@ function App() {
   return (
     <div style={{ padding: "40px", fontSize: "20px" }}>
       <h1>Study-TASK</h1>
+      <h2>大学生のための視認しやすいタスク管理アプリ</h2>
 
       {!user && (
         <button onClick={login}>
