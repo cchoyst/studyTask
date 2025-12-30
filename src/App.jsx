@@ -9,6 +9,10 @@ function App() {
   const [user, setUser] = useState(null);
   const [tasks, setTasks] = useState([]);//tasksのstate追加
   const [title, setTitle] = useState("");//入力フォーム用state追加
+  const [startDate, setStartDate] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [comment, setComment] = useState("");
+
 
 
   useEffect(() => {
@@ -38,16 +42,23 @@ function App() {
 
   const handleAddTask = async () => {
     if (!auth.currentUser) return;
-    createTask({
+    if (!title || !startDate || !dueDate) {
+      alert("タイトル / 期間は必須です！");
+      return;
+    }
+    await createTask({
       userId: auth.currentUser.uid,
       title,
-      startDate: "2025-12-30",
-      dueDate: "2026-01-05",
-      duration: 5,
-      comment: "テスト",
+      startDate,
+      dueDate,
+      duration: 0,
+      comment,
       orderIndex: 1
     });
     setTitle("");
+    setStartDate("");
+    setDueDate("");
+    setComment("");
   };
 
   return (
@@ -65,34 +76,98 @@ function App() {
         <>
           <p>こんにちは {user.displayName} さん！</p>
           <button onClick={logout}>ログアウト</button>
+        
 
-         <br /><br />
-
-          <button onClick={handleAddTask}>
-            🔥 Firestore にタスク登録
-          </button>
-
-          <br /><br />
-          <h3>📋 あなたのタスク一覧</h3>
-
-          {tasks.length === 0 && <p>まだタスクがありません</p>}
-
-          {tasks.map(task => (
-            <li key={task.id}>
-              {task.title}（{task.startDate} → {task.dueDate}）
-            </li>
-          ))}
-
+        
+        <h2>📌 タスク追加フォーム</h2>
+        <div style={{
+          border: "1px solid #ccc",
+          padding: "20px",
+          borderRadius: "12px",
+          width: "400px",
+          marginBottom: "30px"
+        }}>
+          <label>タスク名</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="タスク名を入力"
-            style={{ fontSize: "18px" }}
+            placeholder="例: レポート提出"
+            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
           />
-
-          <button onClick={handleAddTask}>
-            ➕ タスク追加
+          <label>いつから</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+          />
+          <label>いつまで</label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+          />
+          <label>コメント</label>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="補足メモ"
+            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+          />
+          <button
+            onClick={handleAddTask}
+            style={{
+              width: "100%",
+              padding: "10px",
+              fontSize: "16px",
+              borderRadius: "8px",
+              background: "#4CAF50",
+              color: "white",
+              border: "none",
+              cursor: "pointer"
+            }}
+          >
+            ➕ タスクを追加
           </button>
+        </div>
+
+
+
+        <h2>📝 あなたのタスク一覧</h2>
+        {/* ヘッダ */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr 1fr 2fr",
+          fontWeight: "bold",
+          padding: "10px 0",
+          borderBottom: "2px solid #333",
+          width: "800px"
+        }}>
+          <div>タイトル</div>
+          <div>開始日</div>
+          <div>期限</div>
+          <div>コメント</div>
+        </div>
+
+        {/* タスク一覧 */}
+        {tasks.map(task => (
+          <div 
+            key={task.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr 2fr",
+              padding: "12px 0",
+              borderBottom: "1px solid #ccc",
+              width: "800px"
+            }}
+          >
+            <div>{task.title}</div>
+            <div>{task.startDate}</div>
+            <div>{task.dueDate}</div>
+            <div>{task.comment}</div>
+          </div>
+        ))}
 
         </>
 
