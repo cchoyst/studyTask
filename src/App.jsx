@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { createTask } from "./utils/firestoreFunctions";
-import { getDocs, collection, query, where } from "./firebase";
+import { getDocs, collection, query, where } from "firebase/firestore";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
     // ログイン状態監視
@@ -22,18 +23,19 @@ function App() {
       );
 
       const snapshot = await getDocs(q);
-      const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const task = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       console.log("🔥 Firestore から取得:", tasks);
+      setTasks(tasks);
     });
 
     return () => unsubscribe();
   }, []);
 
-   const handleAddTask = async () => {
-    if (!auth.currentUser) return;
 
-    await createTask({
+  const handleAddTask = async () => {
+    if (!auth.currentUser) return;
+    createTask({
       userId: auth.currentUser.uid,
       title: "サンプルタスク",
       startDate: "2025-12-30",
@@ -65,7 +67,22 @@ function App() {
           <button onClick={handleAddTask}>
             🔥 Firestore にタスク登録
           </button>
+
+          <br /><br />
+          <h3>📋 あなたのタスク一覧</h3>
+
+          {tasks.length === 0 && <p>まだタスクがありません</p>}
+
+          {tasks.map(task => (
+            <div key={task.id} style={{ marginBottom: "10px" }}>
+              <strong>{task.title}</strong><br />
+              期間: {task.startDate} → {task.dueDate}<br />
+              コメント: {task.comment}
+            </div>
+          ))}
+
         </>
+
       )}
     </div>
   );
