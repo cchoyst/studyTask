@@ -3,17 +3,18 @@ import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { createTask } from "./utils/firestoreFunctions";
-import { getDocs, collection, query, where } from "firebase/firestore";
+import { getDocs, collection, query, where, onSnapshot } from "firebase/firestore";
 
 function App() {
   const [user, setUser] = useState(null);
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState([]);//tasksのstate追加
+  const [title, setTitle] = useState("");//入力フォーム用state追加
+
 
   useEffect(() => {
     // ログイン状態監視
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-
       if (!u) return;
 
       // Firestore 読み込み
@@ -22,11 +23,13 @@ function App() {
         where("userId", "==", u.uid)
       );
 
-      const snapshot = await getDocs(q);
-      const task = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      console.log("🔥 Firestore から取得:", tasks);
-      setTasks(tasks);
+      return onSnapshot(q, (snapshot) => {
+        const tasks = snapshot.docs.map(doc => ({
+          id: doc.id, ...doc.data(),
+        }));
+        console.log("リアルタイム更新:", tasks);
+        setTasks(tasks);
+      });
     });
 
     return () => unsubscribe();
@@ -37,13 +40,14 @@ function App() {
     if (!auth.currentUser) return;
     createTask({
       userId: auth.currentUser.uid,
-      title: "サンプルタスク",
+      title,
       startDate: "2025-12-30",
       dueDate: "2026-01-05",
       duration: 5,
       comment: "テスト",
       orderIndex: 1
     });
+    setTitle("");
   };
 
   return (
@@ -74,12 +78,21 @@ function App() {
           {tasks.length === 0 && <p>まだタスクがありません</p>}
 
           {tasks.map(task => (
-            <div key={task.id} style={{ marginBottom: "10px" }}>
-              <strong>{task.title}</strong><br />
-              期間: {task.startDate} → {task.dueDate}<br />
-              コメント: {task.comment}
-            </div>
+            <li key={task.id}>
+              {task.title}（{task.startDate} → {task.dueDate}）
+            </li>
           ))}
+
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="タスク名を入力"
+            style={{ fontSize: "18px" }}
+          />
+
+          <button onClick={handleAddTask}>
+            ➕ タスク追加
+          </button>
 
         </>
 
