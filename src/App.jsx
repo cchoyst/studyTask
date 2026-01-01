@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { createTask } from "./utils/firestoreFunctions";
-import { getDocs, collection, query, where, onSnapshot } from "firebase/firestore";
+import { getDocs, collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -13,6 +13,9 @@ function App() {
   const [dueDate, setDueDate] = useState("");
   const [comment, setComment] = useState("");
 
+  const [categories, setCategories] = useState([]);//カテゴリー用state追加
+  const [newCategory, setNewCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
 
   useEffect(() => {
@@ -39,15 +42,52 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  //カテゴリのリアルタイム取得
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "users", user.uid, "categories"),
+      where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCategories(list);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  //カテゴリ追加ボタン
+  const handleAddCategory = async () => {
+  if (!newCategory || !auth.currentUser) return;
+
+  await addDoc(collection(db, "users", auth.currentUser.uid, "categories"), 
+  {
+    name: newCategory,
+    userId: auth.currentUser.uid,
+    createdAt: Date.now()
+  });
+
+  setNewCategory("");
+};
+
+
 
   const handleAddTask = async () => {
     if (!auth.currentUser) return;
     if (!title || !startDate || !dueDate) {
-      alert("タイトル / 期間は必須です！");
+      alert("タイトル / 期間は必須です");
       return;
     }
+
+    const cat = categories.find(c => c.id === selectedCategory);
+
     await createTask({
       userId: auth.currentUser.uid,
+      categoryId: selectedCategory || null,
+      categoryName: cat?.name || "未分類",
       title,
       startDate,
       dueDate,
@@ -55,11 +95,15 @@ function App() {
       comment,
       orderIndex: 1
     });
+
     setTitle("");
     setStartDate("");
     setDueDate("");
     setComment("");
+    setSelectedCategory("");
   };
+
+
 
   return (
     <div style={{ padding: "40px", fontSize: "20px" }}>
@@ -76,37 +120,35 @@ function App() {
         <>
           <p>こんにちは {user.displayName} さん！</p>
           <button onClick={logout}>ログアウト</button>
-        
-
-        
+      
         <h2>📌 タスク追加フォーム</h2>
         <div style={{
-          border: "1px solid #ccc",
-          padding: "20px",
-          borderRadius: "12px",
-          width: "400px",
-          marginBottom: "30px"
+          border: "1px solid #ccc",//フォームの枠線
+          padding: "40px",//フォームの内側の余白
+          borderRadius: "40px",//角丸
+          width: "400px",//フォームの幅
+          marginBottom: "30px"//下の余白
         }}>
           <label>タスク名</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="例: レポート提出"
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+            style={{ width: "100%", padding: "10px", marginBottom: "30px" }}
           />
-          <label>いつから</label>
+          <label>開始日</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
           />
-          <label>いつまで</label>
+          <label>締切</label>
           <input
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+            style={{ width: "100%", padding: "8px", marginBottom: "30px" }}
           />
           <label>コメント</label>
           <textarea
@@ -115,6 +157,31 @@ function App() {
             placeholder="補足メモ"
             style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
           />
+          
+          <label>カテゴリー</label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{ width:"100%", padding:"8px", marginBottom:"10px" }}
+          >
+            <option value="">未選択</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+                ))}
+          </select>
+          <div style={{ display:"flex", gap:"8px", marginBottom:"10px" }}>
+            <input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="新しいカテゴリ名"
+              style={{ flex:1, padding:"8px" }}
+            />
+            <button onClick={handleAddCategory}>
+              ➕ 追加
+            </button>
+          </div>
           <button
             onClick={handleAddTask}
             style={{
@@ -122,8 +189,8 @@ function App() {
               padding: "10px",
               fontSize: "16px",
               borderRadius: "8px",
-              background: "#4CAF50",
-              color: "white",
+              background: "#88d4d2ff",
+              color: "black",
               border: "none",
               cursor: "pointer"
             }}
@@ -138,8 +205,8 @@ function App() {
         {/* ヘッダ */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1fr 1fr 2fr",
-          fontWeight: "bold",
+          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
+          gap: "10px",
           padding: "10px 0",
           borderBottom: "2px solid #333",
           width: "800px"
@@ -147,8 +214,11 @@ function App() {
           <div>タイトル</div>
           <div>開始日</div>
           <div>期限</div>
+          <div>カテゴリー</div>
           <div>コメント</div>
+
         </div>
+
 
         {/* タスク一覧 */}
         {tasks.map(task => (
@@ -156,7 +226,8 @@ function App() {
             key={task.id}
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1fr 1fr 2fr",
+              gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
+              gap: "10px",
               padding: "12px 0",
               borderBottom: "1px solid #ccc",
               width: "800px"
@@ -165,6 +236,7 @@ function App() {
             <div>{task.title}</div>
             <div>{task.startDate}</div>
             <div>{task.dueDate}</div>
+            <div>{task.categoryName || "未分類"}</div>
             <div>{task.comment}</div>
           </div>
         ))}
