@@ -1,4 +1,5 @@
 //メイン画面。ログイン対応に変更
+import "./App.css";
 import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -120,15 +121,50 @@ function App() {
         <>
           <p>こんにちは {user.displayName} さん！</p>
           <button onClick={logout}>ログアウト</button>
-      
-        <h2>📌 タスク追加フォーム</h2>
+
+
+          <h2>📝 あなたのタスク一覧</h2>
+        {/* ヘッダ */}
         <div style={{
-          border: "1px solid #ccc",//フォームの枠線
-          padding: "40px",//フォームの内側の余白
-          borderRadius: "40px",//角丸
-          width: "400px",//フォームの幅
-          marginBottom: "30px"//下の余白
+          display: "grid",
+          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
+          gap: "10px",
+          padding: "10px 0",
+          borderBottom: "2px solid #333",
+          width: "800px"
         }}>
+          <div>タイトル</div>
+          <div>開始日</div>
+          <div>期限</div>
+          <div>カテゴリー</div>
+          <div>コメント</div>
+
+        </div>
+
+
+        {/* タスク一覧 */}
+        {tasks.map(task => (
+          <div 
+            key={task.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
+              gap: "10px",
+              padding: "12px 0",
+              borderBottom: "1px solid #ccc",
+              width: "800px"
+            }}
+          >
+            <div>{task.title}</div>
+            <div>{task.startDate}</div>
+            <div>{task.dueDate}</div>
+            <div>{task.categoryName || "未分類"}</div>
+            <div>{task.comment}</div>
+          </div>
+        ))}
+    
+        <h2>📌 タスク追加フォーム</h2>
+        <div className="form-wrapper">
           <label>タスク名</label>
           <input
             value={title}
@@ -198,48 +234,6 @@ function App() {
             ➕ タスクを追加
           </button>
         </div>
-
-
-
-        <h2>📝 あなたのタスク一覧</h2>
-        {/* ヘッダ */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
-          gap: "10px",
-          padding: "10px 0",
-          borderBottom: "2px solid #333",
-          width: "800px"
-        }}>
-          <div>タイトル</div>
-          <div>開始日</div>
-          <div>期限</div>
-          <div>カテゴリー</div>
-          <div>コメント</div>
-
-        </div>
-
-
-        {/* タスク一覧 */}
-        {tasks.map(task => (
-          <div 
-            key={task.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
-              gap: "10px",
-              padding: "12px 0",
-              borderBottom: "1px solid #ccc",
-              width: "800px"
-            }}
-          >
-            <div>{task.title}</div>
-            <div>{task.startDate}</div>
-            <div>{task.dueDate}</div>
-            <div>{task.categoryName || "未分類"}</div>
-            <div>{task.comment}</div>
-          </div>
-        ))}
 
         </>
 

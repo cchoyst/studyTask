@@ -40,13 +40,3 @@
 .read-the-docs {
   color: #888;
 }
-
-/* 追加スタイル: フォーム */
-.form-wrapper {
-  max-width: 500px;
-  margin: 30px auto;   /* ← 横中央 & 上下余白 */
-  padding: 40px;
-  background: white;
-  border-radius: 40px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
