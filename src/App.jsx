@@ -23,6 +23,10 @@ function App() {
   // 編集・削除タスクの state 追加
   const [editingTask, setEditingTask] = useState(null);
 
+  // タスク追加モーダルの state 追加
+  const [showAddModal, setShowAddModal] = useState(false);
+
+
 
 
   useEffect(() => {
@@ -146,231 +150,269 @@ function App() {
           </button>
 
 
-          <h2>📝 あなたのタスク一覧</h2>
-        {/* ヘッダ */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
-          gap: "10px",
-          padding: "10px 0",
-          borderBottom: "2px solid #333",
-          width: "800px"
-        }}>
-          <div>タイトル</div>
-          <div>開始日</div>
-          <div>期限</div>
-          <div>カテゴリー</div>
-          <div>コメント</div>
-
-        </div>
-
-
-        {/* タスク一覧 */}
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="taskList">
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.droppableProps}>
-                
-                {tasks.map((task, index) => (
-                  <Draggable key={task.id} draggableId={task.id} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-
-
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
-                          gap: "10px",
-                          padding: "12px 0",
-                          borderBottom: "1px solid #ccc",
-                          width: "800px",
-                          background: "white",
-                          ...provided.draggableProps.style
-                        }}
-                      >
-                        <div>{task.title}</div>
-                        <div>{task.startDate}</div>
-                        <div>{task.dueDate}</div>
-                        <div>{task.categoryName || "未分類"}</div>
-                        <div>{task.comment}</div>
-                        <div style={{ position: "relative" }}>
-                          <button
-                            onClick={() => setEditingTask(task)}
-                            style={{
-                              padding: "6px 10px",
-                              borderRadius: "8px",
-                              border: "1px solid #888",
-                              cursor: "pointer"
-                            }}
-                          >
-                            ⋯
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-        
-
-        {/* 編集モーダル */}
-        {editingTask && (
-          <div className="modal">
-            <div className="modal-content">
-
-              <h3>タスク編集</h3>
-
-              <div className="input-group">
-                <label>タイトル</label>
-                <input
-                  value={editingTask.title}
-                  onChange={(e) =>
-                    setEditingTask({ ...editingTask, title: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="input-group">
-                <label>開始日</label>
-                <input
-                  type="date"
-                  value={editingTask.startDate}
-                  onChange={(e) =>
-                    setEditingTask({ ...editingTask, startDate: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="input-group">
-                <label>期限</label>
-                <input
-                  type="date"
-                  value={editingTask.dueDate}
-                  onChange={(e) =>
-                    setEditingTask({ ...editingTask, dueDate: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="input-group">
-                <label>コメント</label>
-                <textarea
-                  value={editingTask.comment}
-                  onChange={(e) =>
-                    setEditingTask({ ...editingTask, comment: e.target.value })
-                  }
-                />
-              </div>
-
-
-              {/* ← ここで保存＆削除を横並びにまとめる */}
-            <div className="modal-button-row">
-              <button className="btn save"
-                onClick={async () => {
-                  await updateTask(editingTask.id, editingTask);
-                  setEditingTask(null);
-                }}
-              >
-                保存
-              </button>
-
-              <button className="btn delete"
-                onClick={async () => {
-                  await deleteTask(editingTask.id);
-                  setEditingTask(null);
-                }}
-              >
-                削除
-              </button>
-            </div>
-
-            {/* ← キャンセルだけ下段 */}
-            <button className="btn cancel" onClick={() => setEditingTask(null)}>
-              閉じる
-            </button>
-            </div>
-          </div>
-        )}
-
-        <h2>📌 タスク追加フォーム</h2>
-        <div className="form-wrapper">
-          <label>タスク名</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例: レポート提出"
-            style={{ width: "100%", padding: "10px", marginBottom: "30px" }}
-          />
-          <label>開始日</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-          <label>期限</label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: "30px" }}
-          />
-          <label>コメント</label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="補足メモ"
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-          
-          <label>カテゴリー</label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{ width:"100%", padding:"8px", marginBottom:"10px" }}
-          >
-            <option value="">未選択</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-                ))}
-          </select>
-          <div style={{ display:"flex", gap:"8px", marginBottom:"10px" }}>
-            <input
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="新しいカテゴリ名"
-              style={{ flex:1, padding:"8px" }}
-            />
-            <button onClick={handleAddCategory}>
-              ➕ 追加
-            </button>
-          </div>
-          <button
-            onClick={handleAddTask}
+          <div
             style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "16px",
-              borderRadius: "8px",
-              background: "#88d4d2ff",
-              color: "black",
-              border: "none",
-              cursor: "pointer"
+              display: "flex",
+              justifyContent: "center",   // ← これ！
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "10px"
             }}
           >
-            ➕ タスクを追加
-          </button>
-        </div>
+            <h2>📝 あなたのタスク一覧</h2>
+
+            <button 
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding:"6px 10px",
+                borderRadius:"50%",
+                border:"none",
+                background:"#4caf50",
+                color:"white",
+                fontSize:"20px",
+                cursor:"pointer"
+              }}
+            >
+              ＋
+            </button>
+          </div>
+
+
+          {/* ヘッダ */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
+            gap: "10px",
+            padding: "10px 0",
+            borderBottom: "2px solid #333",
+            width: "800px"
+          }}>
+            <div>タイトル</div>
+            <div>開始日</div>
+            <div>期限</div>
+            <div>カテゴリー</div>
+            <div>コメント</div>
+
+          </div>
+
+
+          {/* タスク一覧 */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="taskList">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps}>
+                  
+                  {tasks.map((task, index) => (
+                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+
+
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
+                            gap: "10px",
+                            padding: "12px 0",
+                            borderBottom: "1px solid #ccc",
+                            width: "800px",
+                            background: "white",
+                            ...provided.draggableProps.style
+                          }}
+                        >
+                          <div>{task.title}</div>
+                          <div>{task.startDate}</div>
+                          <div>{task.dueDate}</div>
+                          <div>{task.categoryName || "未分類"}</div>
+                          <div>{task.comment}</div>
+                          <div style={{ position: "relative" }}>
+                            <button
+                              onClick={() => setEditingTask(task)}
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: "8px",
+                                border: "1px solid #888",
+                                cursor: "pointer"
+                              }}
+                            >
+                              ⋯
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+          
+
+          {/* 編集モーダル */}
+          {editingTask && (
+            <div className="modal">
+              <div className="modal-content">
+
+                <h3>タスク編集</h3>
+
+                <div className="input-group">
+                  <label>タイトル</label>
+                  <input
+                    value={editingTask.title}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, title: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>開始日</label>
+                  <input
+                    type="date"
+                    value={editingTask.startDate}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, startDate: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>期限</label>
+                  <input
+                    type="date"
+                    value={editingTask.dueDate}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, dueDate: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>コメント</label>
+                  <textarea
+                    value={editingTask.comment}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, comment: e.target.value })
+                    }
+                  />
+                </div>
+
+
+                {/* ← ここで保存＆削除を横並びにまとめる */}
+              <div className="modal-button-row">
+                <button className="btn save"
+                  onClick={async () => {
+                    await updateTask(editingTask.id, editingTask);
+                    setEditingTask(null);
+                  }}
+                >
+                  保存
+                </button>
+
+                <button className="btn delete"
+                  onClick={async () => {
+                    await deleteTask(editingTask.id);
+                    setEditingTask(null);
+                  }}
+                >
+                  削除
+                </button>
+              </div>
+
+              {/* ← キャンセルだけ下段 */}
+              <button className="btn cancel" onClick={() => setEditingTask(null)}>
+                閉じる
+              </button>
+              </div>
+            </div>
+          )}
+
+          {showAddModal && (
+            <div className="modal">
+              <div className="modal-content">
+                <h3>📌 タスク追加フォーム</h3>
+                <div className="input-group">
+                  <label>タスク名</label>
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="例: レポート提出"
+                    style={{ width: "100%", padding: "10px", marginBottom: "30px" }}
+                  />
+                  <label>開始日</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+                  />
+                  <label>期限</label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    style={{ width: "100%", padding: "8px", marginBottom: "30px" }}
+                  />
+                  <label>コメント</label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="補足メモ"
+                    style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+                  />
+                  
+                  <label>カテゴリー</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    style={{ width:"100%", padding:"8px", marginBottom:"10px" }}
+                  >
+                    <option value="">未選択</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                        ))}
+                  </select>
+                  <div style={{ display:"flex", gap:"8px", marginBottom:"10px" }}>
+                    <input
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="新しいカテゴリ名"
+                      style={{ flex:1, padding:"8px" }}
+                    />
+                    <button onClick={handleAddCategory}>
+                      ➕ 追加
+                    </button>
+                  </div>
+                </div>
+
+
+                <div className="modal-button-row">
+                  <button
+                    className="btn save"
+                    onClick={async () => {
+                      await handleAddTask();
+                      setShowAddModal(false);
+                    }}
+                  >
+                    追加
+                  </button>
+
+                  <button
+                    className="btn cancel"
+                    onClick={() => setShowAddModal(false)}
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </>
 
