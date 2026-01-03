@@ -3,8 +3,10 @@ import "./App.css";
 import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { createTask } from "./utils/firestoreFunctions";
-import { getDocs, collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
+import { createTask, updateTask, deleteTask, updateTaskOrder } from "./utils/firestoreFunctions";
+import { getDocs, collection, query, where, onSnapshot, addDoc, orderBy } from "firebase/firestore";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";//ドラッグアンドドロップ用ライブラリ
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,6 +20,10 @@ function App() {
   const [newCategory, setNewCategory] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
+  // 編集・削除タスクの state 追加
+  const [editingTask, setEditingTask] = useState(null);
+
+
 
   useEffect(() => {
     // ログイン状態監視
@@ -28,7 +34,8 @@ function App() {
       // Firestore 読み込み
       const q = query(
         collection(db, "tasks"),
-        where("userId", "==", u.uid)
+        where("userId", "==", u.uid),
+        orderBy("orderIndex", "asc")
       );
 
       return onSnapshot(q, (snapshot) => {
@@ -60,19 +67,32 @@ function App() {
     return () => unsubscribe();
   }, [user]);
 
+
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const newTasks = Array.from(tasks);
+    const [moved] = newTasks.splice(result.source.index, 1);
+    newTasks.splice(result.destination.index, 0, moved);
+
+    setTasks(newTasks);
+
+    await updateTaskOrder(newTasks);
+  };
+
   //カテゴリ追加ボタン
   const handleAddCategory = async () => {
-  if (!newCategory || !auth.currentUser) return;
+    if (!newCategory || !auth.currentUser) return;
 
-  await addDoc(collection(db, "users", auth.currentUser.uid, "categories"), 
-  {
-    name: newCategory,
-    userId: auth.currentUser.uid,
-    createdAt: Date.now()
-  });
+    await addDoc(collection(db, "users", auth.currentUser.uid, "categories"), 
+    {
+      name: newCategory,
+      userId: auth.currentUser.uid,
+      createdAt: Date.now()
+    });
 
-  setNewCategory("");
-};
+    setNewCategory("");
+  };
 
 
 
@@ -94,7 +114,7 @@ function App() {
       dueDate,
       duration: 0,
       comment,
-      orderIndex: 1
+      orderIndex: tasks.length
     });
 
     setTitle("");
@@ -108,8 +128,8 @@ function App() {
 
   return (
     <div style={{ padding: "40px", fontSize: "20px" }}>
-      <h1>Study-TASK</h1>
-      <h2>大学生のための視認しやすいタスク管理アプリ</h2>
+      <h1>見れば理解るカレンダー</h1>
+      <h2>私のためのタスク管理サイト</h2>
 
       {!user && (
         <button onClick={login}>
@@ -120,14 +140,17 @@ function App() {
       {user && (
         <>
           <p>こんにちは {user.displayName} さん！</p>
-          <button onClick={logout}>ログアウト</button>
+          <br /> {/*空行追加*/}
+          <button onClick={logout} className="logout-btn">
+            ログアウト
+          </button>
 
 
           <h2>📝 あなたのタスク一覧</h2>
         {/* ヘッダ */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
+          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
           gap: "10px",
           padding: "10px 0",
           borderBottom: "2px solid #333",
@@ -143,26 +166,140 @@ function App() {
 
 
         {/* タスク一覧 */}
-        {tasks.map(task => (
-          <div 
-            key={task.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr",
-              gap: "10px",
-              padding: "12px 0",
-              borderBottom: "1px solid #ccc",
-              width: "800px"
-            }}
-          >
-            <div>{task.title}</div>
-            <div>{task.startDate}</div>
-            <div>{task.dueDate}</div>
-            <div>{task.categoryName || "未分類"}</div>
-            <div>{task.comment}</div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="taskList">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                
+                {tasks.map((task, index) => (
+                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+
+
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
+                          gap: "10px",
+                          padding: "12px 0",
+                          borderBottom: "1px solid #ccc",
+                          width: "800px",
+                          background: "white",
+                          ...provided.draggableProps.style
+                        }}
+                      >
+                        <div>{task.title}</div>
+                        <div>{task.startDate}</div>
+                        <div>{task.dueDate}</div>
+                        <div>{task.categoryName || "未分類"}</div>
+                        <div>{task.comment}</div>
+                        <div style={{ position: "relative" }}>
+                          <button
+                            onClick={() => setEditingTask(task)}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: "8px",
+                              border: "1px solid #888",
+                              cursor: "pointer"
+                            }}
+                          >
+                            ⋯
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+        
+
+        {/* 編集モーダル */}
+        {editingTask && (
+          <div className="modal">
+            <div className="modal-content">
+
+              <h3>タスク編集</h3>
+
+              <div className="input-group">
+                <label>タイトル</label>
+                <input
+                  value={editingTask.title}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, title: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="input-group">
+                <label>開始日</label>
+                <input
+                  type="date"
+                  value={editingTask.startDate}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, startDate: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="input-group">
+                <label>期限</label>
+                <input
+                  type="date"
+                  value={editingTask.dueDate}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, dueDate: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="input-group">
+                <label>コメント</label>
+                <textarea
+                  value={editingTask.comment}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, comment: e.target.value })
+                  }
+                />
+              </div>
+
+
+              {/* ← ここで保存＆削除を横並びにまとめる */}
+            <div className="modal-button-row">
+              <button className="btn save"
+                onClick={async () => {
+                  await updateTask(editingTask.id, editingTask);
+                  setEditingTask(null);
+                }}
+              >
+                保存
+              </button>
+
+              <button className="btn delete"
+                onClick={async () => {
+                  await deleteTask(editingTask.id);
+                  setEditingTask(null);
+                }}
+              >
+                削除
+              </button>
+            </div>
+
+            {/* ← キャンセルだけ下段 */}
+            <button className="btn cancel" onClick={() => setEditingTask(null)}>
+              閉じる
+            </button>
+            </div>
           </div>
-        ))}
-    
+        )}
+
         <h2>📌 タスク追加フォーム</h2>
         <div className="form-wrapper">
           <label>タスク名</label>
@@ -179,7 +316,7 @@ function App() {
             onChange={(e) => setStartDate(e.target.value)}
             style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
           />
-          <label>締切</label>
+          <label>期限</label>
           <input
             type="date"
             value={dueDate}

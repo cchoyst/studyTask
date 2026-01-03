@@ -18,6 +18,22 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* 追加スタイル: ヘッダー(ログアウトボタン) */
+.logout-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #ff7b7b;
+  color: white;
+  cursor: pointer;
+}
+
+
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -49,4 +65,123 @@
   background: white;
   border-radius: 40px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+
+/* 追加スタイル: モーダル*/
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content {
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:300px;
+}
+
+
+.modal-button-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  gap: 15px; /* ボタン間のスペース */
+}
+
+/* ボタン共通 */
+.btn {
+  width: 40%;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* 保存ボタン */
+.btn.save {
+  background: #4a90e2;
+  color: white;
+}
+.btn.save:hover {
+  background: #3578c4;
+}
+
+/* 削除ボタン */
+.btn.delete {
+  background: #ff4d4d;
+  color: white;
+}
+.btn.delete:hover {
+  background: #e03131;
+}
+
+/* 閉じる（キャンセル） */
+.btn.cancel {
+  margin-top: 12px;     /* ← ここで一段下げて余白をつける */
+  background: #ddd;
+}
+.btn.cancel:hover {
+  background: #c7c7c7;
+}
+
+
+
+
+
+
+/* ====== 入力欄デザイン ====== */
+.input-group {
+  text-align: left;
+  margin-bottom: 14px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+/* セレクトボックスのスタイル */
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ccc;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  background: white;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+/*ここまで*/
+
+
+input:focus,
+textarea:focus {
+  border: 1.5px solid #4f7cff;
+  box-shadow: 0 0 5px rgba(79,124,255,0.4);
+}
+
+textarea {
+  min-height: 70px;
+  resize: vertical;
 }
