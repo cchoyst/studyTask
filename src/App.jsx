@@ -275,7 +275,8 @@ function App() {
           </DragDropContext>
 
 
-
+          <br /> {/*空行追加*/}
+          
           <MonthlyCalendar
             tasks={tasks}
             onTaskFocus={focusTask}
