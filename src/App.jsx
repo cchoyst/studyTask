@@ -1,11 +1,13 @@
 //メイン画面。ログイン対応に変更
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { createTask, updateTask, deleteTask, updateTaskOrder } from "./utils/firestoreFunctions";
 import { getDocs, collection, query, where, onSnapshot, addDoc, orderBy } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";//ドラッグアンドドロップ用ライブラリ
+import MonthlyCalendar from "./MonthlyCalendar";
+
 
 
 function App() {
@@ -26,6 +28,25 @@ function App() {
   // タスク追加モーダルの state 追加
   const [showAddModal, setShowAddModal] = useState(false);
 
+
+  const focusTask = (id) => {
+    const el = document.getElementById(`task-${id}`);
+    if (!el) return;
+
+    el.animate(
+      [
+        { background: "rgba(100,150,255,0.2)" },
+        { background: "rgba(100,150,255,0.8)" },
+        { background: "rgba(100,150,255,0.0)" },
+      ],
+      {
+        duration: 700,
+        easing: "ease-in-out"
+      }
+    );
+  };
+
+  
 
 
 
@@ -185,7 +206,8 @@ function App() {
             gap: "10px",
             padding: "10px 0",
             borderBottom: "2px solid #333",
-            width: "800px"
+            width: "1000px",
+            margin:"0 auto"
           }}>
             <div>タイトル</div>
             <div>開始日</div>
@@ -206,10 +228,10 @@ function App() {
                     <Draggable key={task.id} draggableId={task.id} index={index}>
                       {(provided) => (
                         <div
+                          id={`task-${task.id}`}
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-
 
                           style={{
                             display: "grid",
@@ -217,9 +239,10 @@ function App() {
                             gap: "10px",
                             padding: "12px 0",
                             borderBottom: "1px solid #ccc",
-                            width: "800px",
+                            width: "1000px",
+                            margin:"0 auto",
                             background: "white",
-                            ...provided.draggableProps.style
+                            transition: "background 0.3s",
                           }}
                         >
                           <div>{task.title}</div>
@@ -250,7 +273,15 @@ function App() {
               )}
             </Droppable>
           </DragDropContext>
-          
+
+
+
+          <MonthlyCalendar
+            tasks={tasks}
+            onTaskFocus={focusTask}
+          />
+
+
 
           {/* 編集モーダル */}
           {editingTask && (
@@ -413,7 +444,6 @@ function App() {
               </div>
             </div>
           )}
-
         </>
 
       )}
