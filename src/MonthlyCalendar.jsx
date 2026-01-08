@@ -324,9 +324,9 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
 
 
         let color;
-        if (progress < 0.33) {
+        if (progress < 0.35) {
           color = "rgba(100,150,255,0.35)"; // 薄い
-        } else if (progress < 0.66) {
+        } else if (progress < 0.75) {
           color = "rgba(100,150,255,0.65)"; // 中くらい
         } else {
           color = "rgba(100,150,255,1.0)";  // 濃い
