@@ -1,10 +1,10 @@
 //メイン画面。ログイン対応に変更
 import "./App.css";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { auth, login, logout, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { createTask, updateTask, deleteTask, updateTaskOrder } from "./utils/firestoreFunctions";
-import { getDocs, collection, query, where, onSnapshot, addDoc, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc, orderBy } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";//ドラッグアンドドロップ用ライブラリ
 import MonthlyCalendar from "./MonthlyCalendar";
 
