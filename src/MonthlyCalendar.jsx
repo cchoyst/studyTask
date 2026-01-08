@@ -20,6 +20,10 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     rowTops: [],
     totalH: 0,
     baseCellH: 0,
+     //週ごとの taskId -> laneIndex
+    weekLaneByTaskId: {},
+    // 週ごとの lane 数（クリック判定の上限）
+    weekLaneCount: []
   });
 
 
@@ -105,10 +109,13 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     const h = TASK_H_RATIO;
     const gap = TASK_GAP_PX;
 
-    const taskIndex = Math.floor((insideY - baseY) / (h + gap));
-    if (taskIndex >= 0 && taskIndex < dayTasks.length) {
-      onTaskFocus(dayTasks[taskIndex].id);
-    }
+    const lane = Math.floor((insideY - baseY) / (h + gap));
+    if (lane < 0) return;
+
+    // その日のタスクの中で、そのlaneを持つtaskを探す
+    const hit = dayTasks.find(t => layout.weekLaneByTaskId?.[r]?.[t.id] === lane);
+    if (hit) onTaskFocus(hit.id);
+
   };
 
   // ========== Canvas 描画 ==========
@@ -147,25 +154,48 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
       }
     });
 
-    // ------- 週ごとの最大タスク数から行高を可変にする -------
-    const maxTasksInRow = Array(rows).fill(0);
+    // ===== 週ごとのタスク配列を作る（weekTasksMap[r]）=====
+    const weekTasksMap = Array.from({ length: rows }, () => []);
+    const weekLaneByTaskId = {};     // { [weekRowIndex]: { [taskId]: laneIndex } }
+    const weekLaneCount = Array(rows).fill(0);
 
+    // 同じ task を週に1回だけ入れるためのセット
+    const seenInWeek = Array.from({ length: rows }, () => new Set());
+
+    // dayMap を元に「この週に出現するタスク」を集める
     Object.keys(dayMap).forEach(dStr => {
       const d = Number(dStr);
       const idx = d + startWeek - 1;
       const r = Math.floor(idx / 7);
       if (r < 0 || r >= rows) return;
-      maxTasksInRow[r] = Math.max(maxTasksInRow[r], dayMap[d].length);
+
+      dayMap[d].forEach(task => {
+        if (seenInWeek[r].has(task.id)) return;
+        seenInWeek[r].add(task.id);
+        weekTasksMap[r].push(task);
+      });
     });
 
-    // 1セル内に表示するタスク帯の高さ（元の比率を踏襲）
-    const taskH = baseCellH * 0.18;
-    const gap = 4;
+    // 並び順を安定させたいなら orderIndex でソート（無ければ title など）
+    for (let r = 0; r < rows; r++) {
+      weekTasksMap[r].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+    }
 
-    // 「3件までは今の高さでOK、4件以上ならその分だけ行を伸ばす」
-    const rowHeights = maxTasksInRow.map(n => {
-      const extraCount = Math.max(0, n - 3);
-      return baseCellH + extraCount * (taskH + gap);
+    // ===== レーン割り当て（taskId -> laneIndex を週ごとに固定）=====
+    for (let r = 0; r < rows; r++) {
+      weekLaneByTaskId[r] = {};
+      weekTasksMap[r].forEach((task, i) => {
+        weekLaneByTaskId[r][task.id] = i; // まずは単純に「並び順=レーン番号」
+      });
+      weekLaneCount[r] = weekTasksMap[r].length;
+    }
+
+
+    // ★週の lane数（=週タスク数）で高さを決める
+    const rowHeights = weekLaneCount.map(n => {
+      // タスク帯の高さは固定（TASK_H_RATIO）
+      const needed = (baseCellH * TASK_TOP_RATIO) + n * TASK_H_RATIO + Math.max(0, n - 1) * TASK_GAP_PX + 12;
+      return Math.max(baseCellH, needed);
     });
 
     // 行の開始Y（上からの積み上げ）
@@ -185,7 +215,12 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
 
 
     // クリック判定用にも保存
-    setLayout({ cellW, rowHeights, rowTops, totalH, baseCellH });
+    setLayout({ 
+      cellW, rowHeights, rowTops, totalH, baseCellH,
+      weekLaneByTaskId,
+      weekLaneCount
+    });
+
 
     // 高さ変更後に clear（高さ変更でクリアされるが念のため）
     ctx.clearRect(0, 0, W, totalH);
@@ -234,8 +269,11 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
       const gap = TASK_GAP_PX;
 
       // --------- タスク描画 (3段階の色変化を復活) ----------
-      dayTasks.forEach((task, i) => {
-        const y = baseY + i * (h + gap);
+      dayTasks.forEach(task => {
+        const lane = weekLaneByTaskId[r]?.[task.id];
+        if (lane == null) return;
+
+        const y = baseY + lane * (h + gap);
 
         // --- 進捗色ロジックの再実装 ---
         const s = new Date(task.startDate);
