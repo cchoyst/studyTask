@@ -161,7 +161,7 @@ function App() {
 
   return (
     <div style={{ padding: "40px", fontSize: "20px" }}>
-      <h1>見れば理解るカレンダー</h1>
+      <h1>見て理解るカレンダー</h1>
       <h2>私のためのタスク管理サイト</h2>
 
       {!user && (
