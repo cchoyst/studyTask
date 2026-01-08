@@ -8,6 +8,10 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
   const TASK_TOP_RATIO = 0.25;   // ←開始位置（好きな値に調整）
   const TASK_H_RATIO = 20;     // ←帯の高さ
   const TASK_GAP_PX = 4;         // ←帯の間隔
+  // 曜日ヘッダー
+  const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+  const HEADER_H = 28; // 曜日行の高さ(px)
+
 
 
   // 1. 表示月を管理するState
@@ -56,6 +60,8 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    const y2 = y - HEADER_H;
+    if (y2 < 0) return; //ヘッダークリックしても何も起こらない
 
     const cols = 7;
     if (!layout.rowHeights.length || layout.cellW === 0) return;
@@ -70,7 +76,7 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
       for (let i = 0; i < layout.rowHeights.length; i++) {
       const top = layout.rowTops[i];
       const bottom = top + layout.rowHeights[i];
-      if (y >= top && y < bottom) {
+      if (y2 >= top && y2 < bottom) {
         r = i;
         break;
       }
@@ -103,7 +109,7 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
 
     // セル内のクリック位置からタスクを特定
     const cellH = layout.rowHeights[r];
-    const insideY = y - layout.rowTops[r];
+    const insideY = y2 - layout.rowTops[r];
 
     const baseY = cellH * TASK_TOP_RATIO;
     const h = TASK_H_RATIO;
@@ -207,11 +213,11 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     }
     const totalH = acc;
 
-    // canvas の高さを動的に反映（属性 height を変えると描画がクリアされるのでこのタイミングが良い）
-    canvasRef.current.height = totalH;
+    // canvas の高さを動的に反映
+    canvasRef.current.height = totalH + HEADER_H;
 
     // 見た目上の高さも合わせる（CSS上の表示サイズ）
-  canvasRef.current.style.height = `${totalH}px`;
+    canvasRef.current.style.height = `${totalH + HEADER_H}px`;
 
 
     // クリック判定用にも保存
@@ -225,6 +231,31 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     // 高さ変更後に clear（高さ変更でクリアされるが念のため）
     ctx.clearRect(0, 0, W, totalH);
 
+    // ===== 曜日ヘッダ描画 =====
+    ctx.save();
+    ctx.fillStyle = "#f7f7f7";
+    ctx.fillRect(0, 0, W, HEADER_H);
+
+    ctx.strokeStyle = "#aaa";
+    ctx.strokeRect(0, 0, W, HEADER_H);
+
+    ctx.font = `16px sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#333";
+
+    for (let c = 0; c < cols; c++) {
+      const x = c * cellW;
+      // 区切り線
+      ctx.strokeRect(x, 0, cellW, HEADER_H);
+
+      // 文字（中央寄せ）
+      const label = WEEKDAYS[c];
+      const textW = ctx.measureText(label).width;
+      ctx.fillText(label, x + (cellW - textW) / 2, HEADER_H / 2);
+    }
+    ctx.restore();
+
+
 
 
     // 枠と日付
@@ -233,7 +264,7 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     let dayNum = 1;
     for (let r = 0; r < rows; r++) {
       const cellH = rowHeights[r];
-      const y = rowTops[r];
+      const y = rowTops[r] + HEADER_H;
 
       // フォントは行高に合わせる（元の比率）
       ctx.font = `${baseCellH * 0.18}px sans-serif`;
@@ -263,7 +294,7 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
 
       const cellH = rowHeights[r];
       const x = c * cellW + 4;
-      const baseY = rowTops[r] + cellH * TASK_TOP_RATIO;
+      const baseY = rowTops[r] + HEADER_H + cellH * TASK_TOP_RATIO;
       const w = cellW - 8;
       const h = TASK_H_RATIO;
       const gap = TASK_GAP_PX;
@@ -279,12 +310,18 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
         const s = new Date(task.startDate);
         const e = new Date(task.dueDate);
         
-        // タイムスタンプで総日数を計算
-        const totalMs = e.getTime() - s.getTime();
-        const currentMs = new Date(year, month, d).getTime() - s.getTime();
-        
-        // 進捗率 (0.0 〜 1.0)
-        const progress = totalMs === 0 ? 1 : currentMs / totalMs;
+        // 0時に揃える（タイムゾーン/時刻ズレ対策）
+        const start = new Date(s); start.setHours(0,0,0,0);
+        const end   = new Date(e); end.setHours(0,0,0,0);
+        const cur   = new Date(year, month, d); cur.setHours(0,0,0,0);
+
+        // 終日を「含める」日数（例：1/1〜1/3 は3日）
+        const totalDays = Math.max(1, Math.round((end - start) / 86400000) + 1);
+        const elapsedDays = Math.max(0, Math.round((cur - start) / 86400000)); // 0,1,2,...
+
+        // 0〜1 に正規化（最後の日に 1 になる）
+        const progress = Math.min(1, elapsedDays / (totalDays - 1 || 1));
+
 
         let color;
         if (progress < 0.33) {
