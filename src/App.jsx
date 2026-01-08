@@ -33,6 +33,14 @@ function App() {
     const el = document.getElementById(`task-${id}`);
     if (!el) return;
 
+    // 画面をそのタスク位置までスクロールさせる
+    el.scrollIntoView({
+      behavior: "smooth",   // なめらかに移動
+      block: "center",      // 画面の中央に表示
+      inline: "nearest"
+    });
+
+
     el.animate(
       [
         { background: "rgba(100,150,255,0.2)" },

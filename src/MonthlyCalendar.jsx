@@ -102,7 +102,7 @@ export default function MonthlyCalendar({ tasks, onTaskFocus }) {
     const insideY = y - layout.rowTops[r];
 
     const baseY = cellH * TASK_TOP_RATIO;
-    const h = layout.baseCellH * 0.18;
+    const h = TASK_H_RATIO;
     const gap = TASK_GAP_PX;
 
     const taskIndex = Math.floor((insideY - baseY) / (h + gap));
