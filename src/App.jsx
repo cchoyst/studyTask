@@ -103,6 +103,7 @@ function App() {
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
+    if (result.destination.index === result.source.index) return;
 
     const newTasks = Array.from(tasks);
     const [moved] = newTasks.splice(result.source.index, 1);
@@ -110,7 +111,11 @@ function App() {
 
     setTasks(newTasks);
 
-    await updateTaskOrder(newTasks);
+    try {
+      await updateTaskOrder(newTasks);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   //カテゴリ追加ボタン
@@ -233,15 +238,15 @@ function App() {
                 <div ref={provided.innerRef} {...provided.droppableProps}>
                   
                   {tasks.map((task, index) => (
-                    <Draggable key={task.id} draggableId={task.id} index={index}>
-                      {(provided) => (
+                    <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                      {(provided, snapshot) => (
                         <div
                           id={`task-${task.id}`}
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          {...provided.dragHandleProps}
 
                           style={{
+                            ...provided.draggableProps.style,
                             display: "grid",
                             gridTemplateColumns: "3fr 2fr 2fr 2fr 2fr 80px",
                             gap: "10px",
@@ -249,11 +254,27 @@ function App() {
                             borderBottom: "1px solid #ccc",
                             width: "1000px",
                             margin:"0 auto",
-                            background: "white",
-                            transition: "background 0.3s",
+                            background: snapshot.isDragging ? "#f5f7ff" : "white",
                           }}
                         >
-                          <div>{task.title}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span
+                              {...provided.dragHandleProps}
+                              style={{
+                                cursor: snapshot.isDragging ? "grabbing" : "grab",
+                                userSelect: "none",
+                                fontSize: "30px",
+                                lineHeight: "1",
+                                padding: "4px 10px",
+                                borderRadius: "6px",
+                                opacity: 0.6,
+                              }}
+                              title="ドラッグして並び替え"
+                            >
+                              ≡
+                            </span>
+                            <span>{task.title}</span>
+                          </div>
                           <div>{task.startDate}</div>
                           <div>{task.dueDate}</div>
                           <div>{task.categoryName || "未分類"}</div>
